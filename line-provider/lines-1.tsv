@@ -1,0 +1,10 @@
+e1:{"id": "e1", "coefficient": 1.05, "deadline_utc": 1893456000, "status": "pending"}
+e2:{"id": "e2", "coefficient": 0.95, "deadline_utc": 1893456000, "status": "fst_win"}
+e3:{"id": "e3", "coefficient": 1.05, "deadline_utc": 1893456000, "status": "pending"}
+e4:{"id": "e4", "coefficient": 1.02, "deadline_utc": 1893456000, "status": "pending"}
+e3:{"id": "e3", "coefficient": 1.02, "deadline_utc": 1893456000, "status": "snd_win"}
+e4:{"id": "e4", "coefficient": 1.02, "deadline_utc": 1893456000, "status": "fst_win"}
+e5:{"id": "e5", "coefficient": 1.02, "deadline_utc": 1577836800, "status": "pending"}
+e6:{"id": "e6", "coefficient": 1.03, "deadline_utc": 1893456000, "status": "pending"}
+e7:{"id": "e7", "coefficient": 1.04, "deadline_utc": 1893456000, "status": "pending"}
+e8:{"id": "e8", "coefficient": 1.05, "deadline_utc": 1893456000, "status": "pending"}

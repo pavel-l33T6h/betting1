@@ -1,0 +1,119 @@
+```
+docker-compose up --build
+
+docker compose ps
+NAME            IMAGE                    COMMAND                  SERVICE         CREATED          STATUS                    PORTS
+bet-maker       betting1-bet-maker       "./start.sh"             bet-maker       13 seconds ago   Up 3 seconds              0.0.0.0:8200->8200/tcp
+kafka           apache/kafka:3.8.1       "/__cacert_entrypoin…"   kafka           13 seconds ago   Up 13 seconds (healthy)   9092/tcp
+line-provider   betting1-line-provider   "./start.sh"             line-provider   13 seconds ago   Up 6 seconds (healthy)    0.0.0.0:8100->8100/tcp
+postgres        postgres:17.0            "docker-entrypoint.s…"   postgres        13 seconds ago   Up 13 seconds (healthy)   0.0.0.0:15432->5432/tcp
+
+curl localhost:8200/events
+[
+    {
+        "id": "e1",
+        "coefficient": 1.05,
+        "status": "pending",
+        "is_active": true
+    },
+    {
+        "id": "e6",
+        "coefficient": 1.03,
+        "status": "pending",
+        "is_active": true
+    },
+    {
+        "id": "e7",
+        "coefficient": 1.04,
+        "status": "pending",
+        "is_active": true
+    },
+    {
+        "id": "e8",
+        "coefficient": 1.05,
+        "status": "pending",
+        "is_active": true
+    }
+]
+
+curl -X POST -H 'Content-Type: application/json' -d '{"event_id": "e1", "amount": 100.0, "outcome": "fst_win"}' localhost:8200/bet
+1
+
+curl -X POST -H 'Content-Type: application/json' -d '{"event_id": "e1", "amount": 1000, "outcome": "fst_win"}' localhost:8200/bet
+{"detail":"Bet already placed"}
+
+curl localhost:8200/bets
+[{"id":1,"status":"pending"}]
+
+curl -X POST -H 'Content-Type: application/json' -d '{"event_id": "e2", "amount": 1000, "outcome": "fst_win"}' localhost:8200/bet
+{"detail":"Can't bet on this event"}
+
+curl -X POST -H 'Content-Type: application/json' -d '{"event_id": "e5", "amount": 1000, "outcome": "fst_win"}' localhost:8200/bet
+{"detail":"Can't bet on this event"}
+
+curl -X POST -H 'Content-Type: application/json' -d '{"event_id": "e10", "amount": 1000, "outcome": "fst_win"}' localhost:8200/bet
+{"detail":"Event not found"}
+
+docker compose exec -it line-provider bash -c "echo '{\"id\": \"e1\", \"coefficient\": 1.05, \"deadline_utc\": 1893456000, \"status\": \"fst_win\"}' | kcat -b kafka:9092 -t lines -P -T -k e1 -c 1"
+
+curl localhost:8200/events
+[
+    {
+        "id": "e6",
+        "coefficient": 1.03,
+        "status": "pending",
+        "is_active": true
+    },
+    {
+        "id": "e7",
+        "coefficient": 1.04,
+        "status": "pending",
+        "is_active": true
+    },
+    {
+        "id": "e8",
+        "coefficient": 1.05,
+        "status": "pending",
+        "is_active": true
+    }
+]
+
+curl localhost:8200/bets
+[
+    {
+        "id": 1,
+        "status": "won"
+    }
+]
+
+curl -X POST -H 'Content-Type: application/json' -d '{"event_id": "e6", "amount": 100.0, "outcome": "fst_win"}' localhost:8200/bet
+3
+
+curl localhost:8200/bets
+[
+    {
+        "id": 1,
+        "status": "won"
+    },
+    {
+        "id": 3,
+        "status": "pending"
+    }
+]
+
+docker compose exec -it line-provider bash -c "echo '{\"id\": \"e6\", \"coefficient\": 1.05, \"deadline_utc\": 1893456000, \"status\": \"snd_win\"}' | kcat -b kafka:9092 -t lines -P -T -k e6 -c 1"
+
+curl localhost:8200/bets
+[
+    {
+        "id": 1,
+        "status": "won"
+    },
+    {
+        "id": 3,
+        "status": "lost"
+    }
+]
+
+docker compose down -v
+```

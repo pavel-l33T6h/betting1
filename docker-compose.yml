@@ -1,0 +1,62 @@
+services:
+  kafka:
+    image: apache/kafka:3.8.1
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_NUM_PARTITIONS: "3"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server=localhost:9092"]
+      interval: 10s
+      start_interval: 5s
+      start_period: 30s
+      timeout: 5s
+  line-provider:
+    build:
+      context: ./line-provider
+    container_name: line-provider
+    ports:
+      - "8100:8100"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f localhost:8100/healthcheck"]
+      interval: 10s
+      start_interval: 1s
+      start_period: 300s
+      timeout: 2s
+  postgres:
+    image: postgres:17.0
+    container_name: postgres
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_USER: "bets"
+      POSTGRES_PASSWORD: "1234"
+      POSTGRES_DB: "bets"
+    volumes:
+      - ./bet-maker/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d bets -U bets"]
+      interval: 30s
+      start_interval: 5s
+      start_period: 30s
+      timeout: 5s
+  bet-maker:
+    build:
+      context: ./bet-maker
+    container_name: bet-maker
+    ports:
+      - "8200:8200"
+    depends_on:
+      line-provider:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
